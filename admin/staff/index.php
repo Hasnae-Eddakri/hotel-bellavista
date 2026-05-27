@@ -8,6 +8,7 @@ $currentPage = 'staff';
 
 $db = getDB();
 
+// Cargamos todo el personal activo
 $empleados = $db->query("
     SELECT s.*, st.staff_type_name, sh.shift_name
     FROM staff s
@@ -17,17 +18,18 @@ $empleados = $db->query("
     ORDER BY s.staff_name
 ")->fetchAll();
 
-$esAdmin = ($_SESSION['user_role'] == 'admin');
+// Comprobamos si el usuario es admin para mostrar más información
+$esAdmin = (currentRole() === 'admin');
 
 require_once '../../includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="font-playfair mb-0">
+    <h2 class="mb-0">
         <i class="bi bi-person-badge text-gold me-2"></i>Personal del Hotel
     </h2>
     <?php if ($esAdmin): ?>
-    <a href="/hotel/admin/staff/create.php" class="btn btn-gold">
+    <a href="create.php" class="btn btn-gold">
         <i class="bi bi-plus-circle me-1"></i> Nuevo empleado
     </a>
     <?php endif; ?>
@@ -35,6 +37,9 @@ require_once '../../includes/header.php';
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
+        <?php if (count($empleados) === 0): ?>
+        <p class="text-muted text-center py-4">No hay empleados registrados.</p>
+        <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
@@ -61,44 +66,30 @@ require_once '../../includes/header.php';
                             </span>
                         </td>
                         <td><?= htmlspecialchars($emp['email'] ?? '—') ?></td>
-                        <td><?= htmlspecialchars($emp['contact_no'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($emp['phone'] ?? '—') ?></td>
                         <td><?= htmlspecialchars($emp['shift_name']) ?></td>
                         <?php if ($esAdmin): ?>
-                        <td><?= $emp['salary'] ? number_format($emp['salary'], 2, ',', '.') . '€' : '—' ?></td>
-                        <td><?= $emp['hire_date'] ? date('d/m/Y', strtotime($emp['hire_date'])) : '—' ?></td>
+                        <td><?= number_format($emp['salary'], 2) ?>€</td>
+                        <td><?= date('d/m/Y', strtotime($emp['joining_date'])) ?></td>
                         <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="/hotel/admin/staff/edit.php?id=<?= $emp['staff_id'] ?>"
-                                   class="btn btn-outline-warning" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <!-- Enlace directo sin modal para evitar problemas -->
-                                <a href="/hotel/admin/staff/delete.php?id=<?= $emp['staff_id'] ?>"
-                                   class="btn btn-outline-danger btn-baja"
-                                   data-nombre="<?= htmlspecialchars($emp['staff_name']) ?>"
-                                   title="Dar de baja"
-                                   onclick="return confirm('¿Seguro que quieres dar de baja a <?= addslashes($emp['staff_name']) ?>?')">
-                                    <i class="bi bi-person-x"></i>
-                                </a>
-                            </div>
+                            <a href="edit.php?id=<?= $emp['staff_id'] ?>" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="delete.php?id=<?= $emp['staff_id'] ?>" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('¿Seguro que quieres dar de baja a este empleado?')">
+                                <i class="bi bi-person-x"></i>
+                            </a>
                         </td>
                         <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
-
-                    <?php if (count($empleados) == 0): ?>
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            No hay empleados registrados.
-                        </td>
-                    </tr>
-                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer text-muted small">
-        Total: <?= count($empleados) ?> empleado(s) activo(s)
+        <div class="p-3 text-muted small">
+            Total: <?= count($empleados) ?> empleado(s)
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 

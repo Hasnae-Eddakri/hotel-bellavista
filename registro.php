@@ -1,11 +1,8 @@
 <?php
-// ============================================================
-// registro.php — Página de registro para clientes
-// ============================================================
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
-// Si ya está logueado redirigir
+// Si ya está logueado, redirigir
 if (isLoggedIn()) {
     header("Location: /hotel/mi-cuenta.php");
     exit;
@@ -15,32 +12,34 @@ $error   = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name     = trim($_POST['name'] ?? '');
+    $nombre   = trim($_POST['name'] ?? '');
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $confirm  = $_POST['confirm_password'] ?? '';
+    $confirmar = $_POST['confirm_password'] ?? '';
 
-    // Validaciones servidor
-    if (empty($name) || empty($email) || empty($password)) {
+    // Comprobaciones del servidor
+    if ($nombre === '' || $email === '' || $password === '') {
         $error = "Todos los campos son obligatorios.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "El email no es válido.";
     } elseif (strlen($password) < 6) {
         $error = "La contraseña debe tener al menos 6 caracteres.";
-    } elseif ($password !== $confirm) {
+    } elseif ($password !== $confirmar) {
         $error = "Las contraseñas no coinciden.";
     } else {
         $db = getDB();
-        // Comprobar que el email no exista ya
-        $chk = $db->prepare("SELECT id FROM customer_user WHERE email = ?");
-        $chk->execute([$email]);
-        if ($chk->fetch()) {
+
+        // Comprobamos que el email no esté ya registrado
+        $check = $db->prepare("SELECT id FROM customer_user WHERE email = ?");
+        $check->execute([$email]);
+
+        if ($check->fetch()) {
             $error = "Ya existe una cuenta con ese email. ¿Quieres iniciar sesión?";
         } else {
-            // Crear cuenta de cliente
+            // Creamos la cuenta con la contraseña cifrada
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $db->prepare("INSERT INTO customer_user (name, email, password) VALUES (?, ?, ?)")
-               ->execute([$name, $email, $hash]);
+               ->execute([$nombre, $email, $hash]);
             $success = "¡Cuenta creada correctamente! Ya puedes iniciar sesión.";
         }
     }
@@ -54,23 +53,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Crear cuenta — Hotel Bellavista</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="/hotel/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="login-body">
 
 <div class="login-wrapper d-flex align-items-center justify-content-center min-vh-100">
-    <div class="card shadow-lg" style="width:100%;max-width:460px;border-radius:12px;border:none;">
+    <div class="card shadow-lg" style="width:100%;max-width:460px;">
 
         <div class="card-header text-center bg-dark-hotel text-white py-4">
             <i class="bi bi-building fs-1 text-gold d-block mb-2"></i>
-            <h1 class="font-playfair fs-3 mb-0">Hotel Bellavista</h1>
+            <h1 class="fs-3 mb-0">Hotel Bellavista</h1>
             <p class="small mb-0" style="color:rgba(255,255,255,0.7);">Crea tu cuenta de cliente</p>
         </div>
 
         <div class="card-body p-4">
 
-            <?php if ($success): ?>
+            <?php if ($success !== ''): ?>
             <div class="alert alert-success">
                 <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success) ?>
                 <div class="mt-2">
@@ -79,75 +77,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </a>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php else: ?>
 
-            <?php if ($error): ?>
-            <div class="alert alert-danger" id="errorServer">
+            <?php if ($error !== ''): ?>
+            <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error) ?>
             </div>
             <?php endif; ?>
 
+            <!-- Error de JavaScript -->
             <div class="alert alert-danger d-none" id="errorJs">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <span id="errorJsText"></span>
             </div>
 
-            <?php if (!$success): ?>
-            <form method="POST" id="formRegistro" novalidate>
-
+            <form method="POST" id="formRegistro">
                 <div class="mb-3">
-                    <label for="name" class="form-label"><i class="bi bi-person me-1"></i>Nombre completo</label>
+                    <label for="name" class="form-label">Nombre completo</label>
                     <input type="text" class="form-control" id="name" name="name"
                            placeholder="Tu nombre y apellidos"
-                           value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
                 </div>
 
                 <div class="mb-3">
-                    <label for="email" class="form-label"><i class="bi bi-envelope me-1"></i>Email</label>
+                    <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" name="email"
                            placeholder="tu@email.com"
-                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
-                    <div class="invalid-feedback">Introduce un email válido.</div>
+                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label"><i class="bi bi-lock me-1"></i>Contraseña</label>
-                    <div class="input-group">
-                        <input type="password" class="form-control" id="password" name="password"
-                               placeholder="Mínimo 6 caracteres" required>
-                        <button class="btn btn-outline-secondary" type="button" id="togglePwd">
-                            <i class="bi bi-eye" id="eyePwd"></i>
-                        </button>
-                    </div>
-                    <!-- Barra de fortaleza de contraseña -->
-                    <div class="progress mt-2" style="height:5px;">
-                        <div class="progress-bar" id="pwdStrength" style="width:0%;"></div>
-                    </div>
-                    <small id="pwdStrengthText" class="text-muted"></small>
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Mínimo 6 caracteres">
+                    <div class="form-text" id="indicadorClave"></div>
                 </div>
 
-                <div class="mb-4">
-                    <label for="confirm_password" class="form-label"><i class="bi bi-lock-fill me-1"></i>Repetir contraseña</label>
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Repetir contraseña</label>
                     <input type="password" class="form-control" id="confirm_password" name="confirm_password"
-                           placeholder="Repite tu contraseña" required>
-                    <div class="invalid-feedback">Las contraseñas no coinciden.</div>
+                           placeholder="Repite la contraseña">
                 </div>
 
                 <button type="submit" class="btn btn-gold w-100 py-2">
                     <i class="bi bi-person-plus me-2"></i>Crear cuenta
                 </button>
             </form>
+
             <?php endif; ?>
 
             <div class="text-center mt-3">
-                <p class="small text-muted mb-1">¿Ya tienes cuenta?</p>
-                <a href="/hotel/login-cliente.php" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
-                </a>
-            </div>
-            <div class="text-center mt-2">
-                <a href="/hotel/" class="small text-muted">
-                    <i class="bi bi-arrow-left me-1"></i>Volver a la web
+                <a href="/hotel/login-cliente.php" class="small">¿Ya tienes cuenta? Inicia sesión</a>
+                <span class="text-muted mx-2">|</span>
+                <a href="/hotel/index.php" class="text-muted small">
+                    <i class="bi bi-arrow-left"></i> Volver
                 </a>
             </div>
         </div>
@@ -156,99 +139,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
-$(document).ready(function () {
+$(document).ready(function() {
 
-    // Mostrar/ocultar contraseña
-    $('#togglePwd').on('click', function () {
-        const input = $('#password');
-        const icon  = $('#eyePwd');
-        if (input.attr('type') === 'password') {
-            input.attr('type', 'text');
-            icon.removeClass('bi-eye').addClass('bi-eye-slash');
+    // Indicador de seguridad de la contraseña
+    $('#password').on('keyup', function() {
+        var clave = $(this).val();
+        var indicador = $('#indicadorClave');
+
+        if (clave.length === 0) {
+            indicador.text('');
+        } else if (clave.length < 6) {
+            indicador.html('<span class="text-danger">Contraseña muy corta</span>');
+        } else if (clave.length < 10) {
+            indicador.html('<span class="text-warning">Contraseña aceptable</span>');
         } else {
-            input.attr('type', 'password');
-            icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            indicador.html('<span class="text-success">Contraseña segura</span>');
         }
     });
 
-    // Barra de fortaleza de contraseña (DOM + eventos)
-    $('#password').on('input', function () {
-        const pwd    = $(this).val();
-        const bar    = $('#pwdStrength');
-        const texto  = $('#pwdStrengthText');
-        let fuerza   = 0;
-        if (pwd.length >= 6)               fuerza++;
-        if (pwd.length >= 10)              fuerza++;
-        if (/[A-Z]/.test(pwd))             fuerza++;
-        if (/[0-9]/.test(pwd))             fuerza++;
-        if (/[^A-Za-z0-9]/.test(pwd))      fuerza++;
+    // Validación antes de enviar
+    $('#formRegistro').submit(function(e) {
+        var nombre   = $('#name').val().trim();
+        var email    = $('#email').val().trim();
+        var clave    = $('#password').val();
+        var repetir  = $('#confirm_password').val();
+        var errorDiv  = $('#errorJs');
+        var errorText = $('#errorJsText');
 
-        const niveles = [
-            { pct: 0,   color: '',        texto: '' },
-            { pct: 20,  color: 'bg-danger',  texto: 'Muy débil' },
-            { pct: 40,  color: 'bg-warning', texto: 'Débil' },
-            { pct: 60,  color: 'bg-info',    texto: 'Regular' },
-            { pct: 80,  color: 'bg-primary', texto: 'Fuerte' },
-            { pct: 100, color: 'bg-success', texto: 'Muy fuerte' },
-        ];
-        const n = niveles[fuerza];
-        bar.attr('class', 'progress-bar ' + n.color).css('width', n.pct + '%');
-        texto.text(n.texto);
-    });
+        errorDiv.hide();
 
-    // Validación email en tiempo real
-    $('#email').on('blur', function () {
-        const regex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-        if (regex.test($(this).val().trim())) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        } else {
-            $(this).removeClass('is-valid').addClass('is-invalid');
-        }
-    });
-
-    // Validación confirmación contraseña en tiempo real
-    $('#confirm_password').on('input', function () {
-        if ($(this).val() === $('#password').val()) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        } else {
-            $(this).removeClass('is-valid').addClass('is-invalid');
-        }
-    });
-
-    // Validación completa al enviar
-    $('#formRegistro').on('submit', function (e) {
-        const name    = $('#name').val().trim();
-        const email   = $('#email').val().trim();
-        const pwd     = $('#password').val();
-        const confirm = $('#confirm_password').val();
-        const regexEmail = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-
-        $('#errorJs').addClass('d-none');
-
-        if (name.length < 2) {
+        if (nombre === '') {
             e.preventDefault();
-            $('#errorJsText').text('El nombre debe tener al menos 2 caracteres.');
-            $('#errorJs').removeClass('d-none').hide().fadeIn(300);
+            errorText.text('El nombre es obligatorio.');
+            errorDiv.fadeIn(300);
+            $('#name').focus();
             return;
         }
-        if (!regexEmail.test(email)) {
+
+        if (email === '' || email.indexOf('@') === -1) {
             e.preventDefault();
-            $('#errorJsText').text('Introduce un email válido.');
-            $('#errorJs').removeClass('d-none').hide().fadeIn(300);
+            errorText.text('Introduce un email válido.');
+            errorDiv.fadeIn(300);
+            $('#email').focus();
             return;
         }
-        if (pwd.length < 6) {
+
+        if (clave.length < 6) {
             e.preventDefault();
-            $('#errorJsText').text('La contraseña debe tener al menos 6 caracteres.');
-            $('#errorJs').removeClass('d-none').hide().fadeIn(300);
+            errorText.text('La contraseña debe tener al menos 6 caracteres.');
+            errorDiv.fadeIn(300);
+            $('#password').focus();
             return;
         }
-        if (pwd !== confirm) {
+
+        if (clave !== repetir) {
             e.preventDefault();
-            $('#errorJsText').text('Las contraseñas no coinciden.');
-            $('#errorJs').removeClass('d-none').hide().fadeIn(300);
+            errorText.text('Las contraseñas no coinciden.');
+            errorDiv.fadeIn(300);
+            $('#confirm_password').focus();
         }
     });
+
 });
 </script>
 </body>

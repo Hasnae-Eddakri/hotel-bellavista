@@ -1,14 +1,10 @@
 <?php
-// ============================================================
-// includes/header.php
-// Cabecera HTML común para TODAS las páginas del admin
-// Se incluye con: require_once '../includes/header.php';
-// ============================================================
+// header.php — cabecera HTML común del panel de administración
+// Se incluye en todas las páginas del admin con: require_once '../includes/header.php';
 
-// $pageTitle debe definirse antes de incluir este archivo
-$pageTitle = $pageTitle ?? 'Hotel Bellavista';
+$pageTitle   = $pageTitle   ?? 'Hotel Bellavista';
 $currentPage = $currentPage ?? '';
-$userRole = currentRole();
+$userRole    = currentRole();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -16,14 +12,8 @@ $userRole = currentRole();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?> — Hotel Bellavista</title>
-
-    <!-- Bootstrap 5 CSS (diseño responsivo) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Google Fonts: Playfair Display + Lato -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- CSS propio -->
     <link href="/hotel/assets/css/style.css" rel="stylesheet">
 </head>
 <body>
@@ -31,10 +21,9 @@ $userRole = currentRole();
 <!-- Barra de navegación del panel admin -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark-hotel">
     <div class="container-fluid">
-        <!-- Logo -->
         <a class="navbar-brand d-flex align-items-center gap-2" href="/hotel/admin/dashboard.php">
             <i class="bi bi-building fs-4 text-gold"></i>
-            <span class="font-playfair">Hotel Bellavista</span>
+            <span>Hotel Bellavista</span>
         </a>
 
         <!-- Botón hamburguesa para móvil -->
@@ -42,7 +31,6 @@ $userRole = currentRole();
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Menú de navegación -->
         <div class="collapse navbar-collapse" id="navbarAdmin">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
@@ -80,39 +68,35 @@ $userRole = currentRole();
             <!-- Usuario logueado -->
             <div class="d-flex align-items-center gap-3">
                 <span class="text-light small">
-                    <i class="bi bi-person-circle"></i>
+                    <i class="bi bi-person-circle me-1"></i>
                     <?= htmlspecialchars(currentUser()) ?>
-                    <span class="badge bg-gold text-dark ms-1"><?= htmlspecialchars($userRole) ?></span>
+                    <span class="badge bg-gold ms-1"><?= htmlspecialchars($userRole) ?></span>
                 </span>
                 <a href="/hotel/logout.php" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-                <!-- Enlace a la web pública -->
-                <a href="/hotel/index.php" class="btn btn-sm btn-gold" target="_blank">
-                    <i class="bi bi-globe"></i> Ver web
+                    <i class="bi bi-box-arrow-right me-1"></i>Salir
                 </a>
             </div>
         </div>
     </div>
 </nav>
 
-<!-- Contenedor principal -->
-<main class="container-fluid py-4 px-4">
+<!-- Mensajes de sesión (éxito o error) -->
+<div class="container-fluid mt-3">
+    <?php if (!empty($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($_SESSION['success']) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
 
-<?php
-// Mostrar mensajes de éxito o error de la sesión
-if (!empty($_SESSION['success'])) {
-    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>' . htmlspecialchars($_SESSION['success']) . '
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>';
-    unset($_SESSION['success']);
-}
-if (!empty($_SESSION['error'])) {
-    echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>' . htmlspecialchars($_SESSION['error']) . '
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>';
-    unset($_SESSION['error']);
-}
-?>
+    <?php if (!empty($_SESSION['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($_SESSION['error']) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+</div>
+
+<main class="container-fluid py-4">

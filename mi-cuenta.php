@@ -1,10 +1,8 @@
 <?php
-// ============================================================
-// mi-cuenta.php — Panel del cliente logueado
-// ============================================================
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
+// Solo pueden entrar los clientes logueados
 if (!isLoggedIn() || currentRole() !== 'cliente') {
     header("Location: /hotel/login-cliente.php");
     exit;
@@ -13,14 +11,14 @@ if (!isLoggedIn() || currentRole() !== 'cliente') {
 $db  = getDB();
 $uid = $_SESSION['customer_user_id'];
 
-// Obtener datos del usuario
+// Obtenemos los datos del cliente
 $stmt = $db->prepare("SELECT * FROM customer_user WHERE id = ?");
 $stmt->execute([$uid]);
 $usuario = $stmt->fetch();
 
-// Obtener reservas si tiene customer_id vinculado
+// Obtenemos sus reservas si tiene customer_id vinculado
 $misReservas = [];
-if ($usuario['customer_id']) {
+if (!empty($usuario['customer_id'])) {
     $stmt = $db->prepare("
         SELECT b.*, r.room_no, rt.room_type_name
         FROM booking b
@@ -41,15 +39,14 @@ if ($usuario['customer_id']) {
     <title>Mi cuenta — Hotel Bellavista</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="/hotel/assets/css/style.css" rel="stylesheet">
 </head>
 <body>
 
-<!-- Navbar -->
+<!-- Barra de navegación -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark-hotel">
     <div class="container">
-        <a class="navbar-brand font-playfair" href="/hotel/">
+        <a class="navbar-brand" href="/hotel/">
             <i class="bi bi-building text-gold me-2"></i>Hotel Bellavista
         </a>
         <div class="d-flex align-items-center gap-3">
@@ -65,9 +62,9 @@ if ($usuario['customer_id']) {
 </nav>
 
 <div class="container py-5">
-    <h2 class="font-playfair mb-4">
+    <h2 class="mb-4">
         <i class="bi bi-person-circle text-gold me-2"></i>
-        Bienvenida, <?= htmlspecialchars(explode(' ', $usuario['name'])[0]) ?>
+        Bienvenido, <?= htmlspecialchars(explode(' ', $usuario['name'])[0]) ?>
     </h2>
 
     <div class="row g-4">
@@ -78,15 +75,16 @@ if ($usuario['customer_id']) {
                     <h5 class="mb-0"><i class="bi bi-person text-gold me-2"></i>Mi cuenta</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Nombre:</strong><br><?= htmlspecialchars($usuario['name']) ?></p>
-                    <p><strong>Email:</strong><br><?= htmlspecialchars($usuario['email']) ?></p>
-                    <p class="mb-0"><strong>Cliente desde:</strong><br>
-                        <?= date('d/m/Y', strtotime($usuario['created_at'])) ?>
-                    </p>
+                    <p class="mb-1"><strong>Nombre:</strong></p>
+                    <p class="text-muted"><?= htmlspecialchars($usuario['name']) ?></p>
+                    <p class="mb-1"><strong>Email:</strong></p>
+                    <p class="text-muted"><?= htmlspecialchars($usuario['email']) ?></p>
+                    <p class="mb-1"><strong>Miembro desde:</strong></p>
+                    <p class="text-muted"><?= date('d/m/Y', strtotime($usuario['created_at'])) ?></p>
                 </div>
                 <div class="card-footer bg-white">
-                    <a href="/hotel/" class="btn btn-gold w-100">
-                        <i class="bi bi-search me-1"></i>Buscar habitaciones
+                    <a href="/hotel/reservar.php" class="btn btn-gold w-100">
+                        <i class="bi bi-calendar-plus me-2"></i>Hacer una reserva
                     </a>
                 </div>
             </div>
@@ -95,33 +93,48 @@ if ($usuario['customer_id']) {
         <!-- Mis reservas -->
         <div class="col-12 col-md-8">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-calendar-check text-gold me-2"></i>Mis reservas</h5>
-                    <span class="badge bg-primary"><?= count($misReservas) ?></span>
+                <div class="card-header bg-dark-hotel text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-check text-gold me-2"></i>
+                        Mis reservas
+                        <span class="badge bg-gold ms-2"><?= count($misReservas) ?></span>
+                    </h5>
                 </div>
                 <div class="card-body p-0">
-                    <?php if (empty($misReservas)): ?>
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-calendar-x d-block fs-1 mb-3"></i>
-                        <p>Todavía no tienes reservas.</p>
-                        <a href="/hotel/" class="btn btn-gold">
-                            <i class="bi bi-search me-1"></i>Buscar habitaciones
-                        </a>
+                    <?php if (count($misReservas) === 0): ?>
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                        No tienes reservas todavía.
+                        <div class="mt-3">
+                            <a href="/hotel/reservar.php" class="btn btn-sm btn-gold">Reservar ahora</a>
+                        </div>
                     </div>
                     <?php else: ?>
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr><th>Habitación</th><th>Check-in</th><th>Check-out</th><th>Total</th><th>Estado</th></tr>
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Habitación</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($misReservas as $r): ?>
                                 <tr>
-                                    <td><span class="badge bg-dark"><?= htmlspecialchars($r['room_no']) ?></span> <small><?= htmlspecialchars($r['room_type_name']) ?></small></td>
+                                    <td>Hab. <?= htmlspecialchars($r['room_no']) ?></td>
                                     <td><?= date('d/m/Y', strtotime($r['check_in'])) ?></td>
                                     <td><?= date('d/m/Y', strtotime($r['check_out'])) ?></td>
-                                    <td class="fw-bold"><?= number_format($r['total_price'],2,',','.') ?>€</td>
-                                    <td><?= $r['payment_status'] ? '<span class="badge bg-success">Confirmada</span>' : '<span class="badge bg-warning text-dark">Pendiente</span>' ?></td>
+                                    <td><?= number_format($r['total_price'], 2) ?> €</td>
+                                    <td>
+                                        <?php if ($r['payment_status'] == 1): ?>
+                                            <span class="badge bg-success">Pagada</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-warning text-dark">Pendiente</span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -133,6 +146,12 @@ if ($usuario['customer_id']) {
         </div>
     </div>
 </div>
+
+<footer class="bg-dark-hotel text-light py-3 mt-5">
+    <div class="container text-center">
+        <small>Hotel Bellavista &copy; <?= date('Y') ?></small>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

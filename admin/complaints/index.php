@@ -1,8 +1,4 @@
 <?php
-// ============================================================
-// admin/complaints/index.php
-// Gestión de quejas y reclamaciones
-// ============================================================
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 requireLogin();
@@ -13,15 +9,17 @@ $currentPage = 'complaints';
 $db = getDB();
 
 // Marcar queja como resuelta
-if ($_GET['resolve'] ?? false) {
+if (isset($_GET['resolve'])) {
     $id       = (int)$_GET['resolve'];
-    $response = trim($_POST['response'] ?? 'Resuelto por el equipo del hotel.');
-    $db->prepare("UPDATE complaint SET resolve_status=1, resolve_date=NOW(), response=? WHERE id=?")->execute([$response, $id]);
+    $respuesta = trim($_POST['response'] ?? 'Resuelto por el equipo del hotel.');
+    $db->prepare("UPDATE complaint SET resolve_status=1, resolve_date=NOW(), response=? WHERE id=?")
+       ->execute([$respuesta, $id]);
     $_SESSION['success'] = "Queja marcada como resuelta.";
     header("Location: index.php");
     exit;
 }
 
+// Cargamos todas las quejas
 $quejas = $db->query("
     SELECT c.*, cu.customer_name
     FROM complaint c
@@ -29,21 +27,30 @@ $quejas = $db->query("
     ORDER BY c.resolve_status ASC, c.created_at DESC
 ")->fetchAll();
 
+// Contamos cuántas están pendientes
+$pendientes = 0;
+foreach ($quejas as $q) {
+    if ($q['resolve_status'] == 0) $pendientes++;
+}
+
 require_once '../../includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="font-playfair mb-0"><i class="bi bi-exclamation-triangle text-gold me-2"></i>Quejas y Reclamaciones</h2>
-    <div id="contadorPendientes" class="badge bg-danger fs-6"></div>
+    <h2 class="mb-0"><i class="bi bi-exclamation-triangle text-gold me-2"></i>Quejas y Reclamaciones</h2>
+    <?php if ($pendientes > 0): ?>
+    <span class="badge bg-danger fs-6"><?= $pendientes ?> pendiente(s)</span>
+    <?php endif; ?>
 </div>
 
-<!-- Filtro show/hide (jQuery) -->
+<!-- Botones de filtro (con jQuery) -->
 <div class="mb-3">
     <button class="btn btn-sm btn-outline-secondary me-2" id="btnTodas">Todas</button>
     <button class="btn btn-sm btn-outline-danger me-2" id="btnPendientes">Solo pendientes</button>
     <button class="btn btn-sm btn-outline-success" id="btnResueltas">Solo resueltas</button>
 </div>
 
+<!-- Lista de quejas -->
 <div class="row g-4" id="listaQuejas">
     <?php foreach ($quejas as $q): ?>
     <div class="col-12 queja-card <?= $q['resolve_status'] ? 'resuelta' : 'pendiente' ?>">
@@ -52,107 +59,74 @@ require_once '../../includes/header.php';
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                     <div>
                         <h5 class="mb-1">
-                            <?= $q['resolve_status']
-                                ? '<i class="bi bi-check-circle-fill text-success me-2"></i>'
-                                : '<i class="bi bi-clock-fill text-danger me-2"></i>' ?>
+                            <?php if ($q['resolve_status']): ?>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <?php else: ?>
+                                <i class="bi bi-clock-fill text-danger me-2"></i>
+                            <?php endif; ?>
                             <?= htmlspecialchars($q['complaint_type']) ?>
                         </h5>
                         <p class="text-muted small mb-1">
-                            <i class="bi bi-person me-1"></i><?= htmlspecialchars($q['complainant_name']) ?>
-                            <?php if ($q['customer_name']): ?>
-                            — <a href="../customers/view.php?id=<?= $q['customer_id'] ?>"><?= htmlspecialchars($q['customer_name']) ?></a>
-                            <?php endif; ?>
-                        </p>
-                        <p class="text-muted small mb-0">
+                            <i class="bi bi-person me-1"></i><?= htmlspecialchars($q['customer_name'] ?? 'Anónimo') ?>
+                            &nbsp;|&nbsp;
                             <i class="bi bi-calendar me-1"></i><?= date('d/m/Y H:i', strtotime($q['created_at'])) ?>
                         </p>
-                    </div>
-                    <div>
-                        <?php if ($q['resolve_status']): ?>
-                            <span class="badge bg-success">Resuelta</span>
-                        <?php else: ?>
-                            <span class="badge bg-danger">Pendiente</span>
+                        <p class="mb-0"><?= nl2br(htmlspecialchars($q['complaint_text'])) ?></p>
+
+                        <?php if ($q['resolve_status'] && !empty($q['response'])): ?>
+                        <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-success fw-bold">Respuesta del hotel:</small><br>
+                            <small><?= nl2br(htmlspecialchars($q['response'])) ?></small>
+                        </div>
                         <?php endif; ?>
                     </div>
-                </div>
 
-                <!-- Descripción (expandible con jQuery) -->
-                <div class="mt-3">
-                    <p class="mb-2"><?= htmlspecialchars($q['complaint']) ?></p>
-                </div>
-
-                <?php if ($q['resolve_status'] && $q['response']): ?>
-                <!-- Respuesta del hotel -->
-                <div class="alert alert-success py-2 mb-2">
-                    <small><i class="bi bi-reply-fill me-1"></i><strong>Respuesta del hotel:</strong>
-                    <?= htmlspecialchars($q['response']) ?></small>
-                </div>
-                <?php endif; ?>
-
-                <?php if (!$q['resolve_status']): ?>
-                <!-- Formulario para resolver (show/hide con jQuery) -->
-                <div class="mt-2">
-                    <button class="btn btn-sm btn-outline-success btn-resolver" data-id="<?= $q['id'] ?>">
-                        <i class="bi bi-check-circle me-1"></i>Marcar como resuelta
-                    </button>
-                    <!-- Panel de respuesta (oculto) -->
-                    <div class="resolver-panel mt-2 d-none" id="panel-<?= $q['id'] ?>">
+                    <!-- Botón para resolver -->
+                    <?php if (!$q['resolve_status']): ?>
+                    <div>
                         <form method="POST" action="?resolve=<?= $q['id'] ?>">
-                            <div class="input-group">
-                                <textarea class="form-control" name="response" rows="2"
-                                          placeholder="Escribe la respuesta al cliente..."><?= htmlspecialchars($q['response'] ?? '') ?></textarea>
-                                <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-check"></i>
-                                </button>
-                            </div>
+                            <textarea name="response" class="form-control mb-2" rows="2"
+                                      placeholder="Escribe una respuesta (opcional)..." style="min-width:220px;"></textarea>
+                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                <i class="bi bi-check-circle me-1"></i>Marcar como resuelta
+                            </button>
                         </form>
                     </div>
+                    <?php else: ?>
+                    <span class="badge bg-success">Resuelta el <?= date('d/m/Y', strtotime($q['resolve_date'])) ?></span>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
     <?php endforeach; ?>
-    <?php if (empty($quejas)): ?>
-    <div class="col-12"><p class="text-center text-muted py-4">No hay quejas registradas.</p></div>
+
+    <?php if (count($quejas) === 0): ?>
+    <div class="col-12">
+        <p class="text-muted text-center py-4">No hay quejas registradas. ¡Buena señal!</p>
+    </div>
     <?php endif; ?>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
 $(document).ready(function() {
-    // --------------------------------------------------------
-    // Contar pendientes y mostrar en el badge (DOM)
-    // --------------------------------------------------------
-    const pendientes = $('.queja-card.pendiente').length;
-    if (pendientes > 0) {
-        $('#contadorPendientes').text(pendientes + ' pendiente(s)').show();
-    }
 
-    // --------------------------------------------------------
-    // Botones de filtro (jQuery show/hide)
-    // --------------------------------------------------------
-    $('#btnTodas').on('click', function() {
-        $('.queja-card').slideDown(300);
+    // Filtrar quejas con jQuery
+    $('#btnTodas').click(function() {
+        $('.queja-card').show();
     });
 
-    $('#btnPendientes').on('click', function() {
-        $('.queja-card.resuelta').slideUp(200);
-        $('.queja-card.pendiente').slideDown(300);
+    $('#btnPendientes').click(function() {
+        $('.queja-card').hide();
+        $('.queja-card.pendiente').show();
     });
 
-    $('#btnResueltas').on('click', function() {
-        $('.queja-card.pendiente').slideUp(200);
-        $('.queja-card.resuelta').slideDown(300);
+    $('#btnResueltas').click(function() {
+        $('.queja-card').hide();
+        $('.queja-card.resuelta').show();
     });
 
-    // --------------------------------------------------------
-    // Mostrar panel de resolución con slideDown (jQuery)
-    // --------------------------------------------------------
-    $('.btn-resolver').on('click', function() {
-        const id = $(this).data('id');
-        $('#panel-' + id).slideToggle(300);
-        $(this).toggleClass('btn-outline-success btn-outline-secondary');
-    });
 });
 </script>
 
