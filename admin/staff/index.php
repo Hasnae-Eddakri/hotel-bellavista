@@ -66,11 +66,11 @@ require_once '../../includes/header.php';
                             </span>
                         </td>
                         <td><?= htmlspecialchars($emp['email'] ?? '—') ?></td>
-                        <td><?= htmlspecialchars($emp['phone'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($emp['contact_no'] ?? '—') ?></td>
                         <td><?= htmlspecialchars($emp['shift_name']) ?></td>
                         <?php if ($esAdmin): ?>
                         <td><?= number_format($emp['salary'], 2) ?>€</td>
-                        <td><?= date('d/m/Y', strtotime($emp['joining_date'])) ?></td>
+                        <td><?= date('d/m/Y', strtotime($emp['hire_date'])) ?></td>
                         <td>
                             <a href="edit.php?id=<?= $emp['staff_id'] ?>" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-pencil"></i>

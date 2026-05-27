@@ -71,7 +71,7 @@ require_once '../../includes/header.php';
                             &nbsp;|&nbsp;
                             <i class="bi bi-calendar me-1"></i><?= date('d/m/Y H:i', strtotime($q['created_at'])) ?>
                         </p>
-                        <p class="mb-0"><?= nl2br(htmlspecialchars($q['complaint_text'])) ?></p>
+                        <p class="mb-0"><?= nl2br(htmlspecialchars($q['complaint'])) ?></p>
 
                         <?php if ($q['resolve_status'] && !empty($q['response'])): ?>
                         <div class="mt-2 p-2 bg-light rounded">

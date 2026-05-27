@@ -89,7 +89,7 @@ require_once '../../includes/header.php';
                     <tr>
                         <td class="fw-bold"><?= htmlspecialchars($c['customer_name']) ?></td>
                         <td><?= htmlspecialchars($c['email']) ?></td>
-                        <td><?= htmlspecialchars($c['phone'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($c['contact_no'] ?? '—') ?></td>
                         <td>
                             <span class="badge bg-secondary me-1"><?= htmlspecialchars($c['id_card_type']) ?></span>
                             <?= htmlspecialchars($c['id_card_no']) ?>
