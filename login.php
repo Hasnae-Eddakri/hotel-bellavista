@@ -108,9 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="card-footer text-center text-muted small py-2">
-            Usuario demo: <strong>admin</strong> / Contraseña: <strong>password</strong>
-        </div>
     </div>
 </div>
 

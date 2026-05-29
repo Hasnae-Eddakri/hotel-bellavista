@@ -13,13 +13,6 @@ Aplicación web de gestión hotelera: habitaciones, reservas, clientes, personal
 - **JavaScript**: JS puro + jQuery 3.7 (Fade, Slide, AJAX)
 - **Despliegue**: Git/GitHub + AWS
 
-## Credenciales demo
-
-| Usuario | Contraseña | Rol |
-|---------|-----------|-----|
-| admin | password | Administrador |
-| recepcion | password | Recepcionista |
-
 ## Instalación local
 
 1. Importar `hotelbellavista.sql` en phpMyAdmin

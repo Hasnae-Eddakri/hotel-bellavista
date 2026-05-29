@@ -40,14 +40,6 @@ $(document).ready(function () {
 
     // Cargar tiempo meteorológico
     cargarTiempo();
-
-    // Cargar reviews cuando la sección entra en pantalla
-    const $section = $('#seccionReviews');
-    if ($section.length) {
-        const obs = new IntersectionObserver(function (entries) {
-            if (entries[0].isIntersecting) { cargarReviews(); obs.disconnect(); }
-        }, { threshold: 0.2 });
-        obs.observe($section[0]);
     }
 });
 
@@ -100,7 +92,7 @@ function cargarTiempo() {
     if (!widget.length) return;
     widget.html('<div class="text-center p-3"><div class="spinner-gold mx-auto"></div></div>');
     $.ajax({
-        url: '/api/weather.php', method: 'GET', dataType: 'json', timeout: 6000,
+        url: '/hotel/api/weather.php', method: 'GET', dataType: 'json', timeout: 6000,
         success: function (data) {
             const iconos = {'Despejado':'☀️','Mayormente despejado':'🌤️','Parcialmente nublado':'⛅','Nublado':'☁️','Lluvia ligera':'🌧️','Tormenta':'⛈️','Niebla':'🌫️'};
             const icono  = iconos[data.desc] || '🌡️';
@@ -119,43 +111,3 @@ function cargarTiempo() {
     });
 }
 
-// ============================================================
-// AJAX: Cargar reviews (DWEC)
-// ============================================================
-function cargarReviews() {
-    const container = $('#reviewsContainer');
-    if (!container.length) return;
-    container.html('<div class="text-center py-4"><div class="spinner-gold mx-auto"></div></div>');
-    $.ajax({
-        url: '/api/get_reviews.php', method: 'GET', dataType: 'json',
-        success: function (data) {
-            if (!data.reviews || data.reviews.length === 0) {
-                container.html('<p class="text-center text-muted">No hay valoraciones aún.</p>');
-                return;
-            }
-            let html = '<div class="row g-4">';
-            data.reviews.forEach(function (r) {
-                let estrellas = '';
-                for (let i = 1; i <= 5; i++) {
-                    estrellas += i <= r.rating ? '<i class="bi bi-star-fill text-warning"></i>' : '<i class="bi bi-star text-muted"></i>';
-                }
-                // Objeto Date para formatear fecha (DWEC)
-                const fecha    = new Date(r.created_at);
-                const fechaStr = fecha.toLocaleDateString('es-ES', { year:'numeric', month:'long' });
-                html += `<div class="col-12 col-md-6 col-lg-4">
-                    <div class="review-card h-100">
-                        <div class="stars mb-2">${estrellas}</div>
-                        <p class="mb-3 fst-italic">"${r.comment}"</p>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center text-white" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">${r.customer_name.charAt(0).toUpperCase()}</div>
-                            <div><div class="fw-bold small">${r.customer_name}</div><div class="text-muted" style="font-size:0.75rem;">${fechaStr}</div></div>
-                        </div>
-                    </div>
-                </div>`;
-            });
-            html += '</div>';
-            container.hide().html(html).fadeIn(500);
-        },
-        error: function () { container.html('<p class="text-center text-muted">No se pudieron cargar las valoraciones.</p>'); }
-    });
-}

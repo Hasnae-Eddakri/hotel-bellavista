@@ -63,7 +63,6 @@ $iconosServicio = [
                     <li class="nav-item"><a class="nav-link" href="#habitaciones">Habitaciones</a></li>
                     <li class="nav-item"><a class="nav-link" href="#servicios">Servicios</a></li>
                     <li class="nav-item"><a class="nav-link" href="#galeria">Galería</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#valoraciones">Opiniones</a></li>
                     <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
                 </ul>
                 <?php
@@ -340,28 +339,7 @@ $tieneImagen = ($imagen !== false && !empty($imagen['image_path']));
     </section>
 
 
-    <!-- ============================================================
-     TIEMPO METEOROLÓGICO + REVIEWS (AJAX, DWEC)
-============================================================ -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <div class="row g-4 align-items-start">
-                <!-- Tiempo (AJAX) -->
-                <div class="col-12 col-md-4">
-                    <h5 class="font-playfair mb-3"><i class="bi bi-cloud-sun text-gold me-2"></i>El tiempo hoy</h5>
-                    <div id="weatherWidget">Cargando...</div>
-                </div>
-
-                <!-- Valoraciones (AJAX) -->
-                <div class="col-12 col-md-8" id="seccionReviews">
-                    <h5 class="font-playfair mb-3"><i class="bi bi-star text-gold me-2"></i>Lo que dicen nuestros huéspedes</h5>
-                    <div id="reviewsContainer">
-                        <p class="text-muted">Cargando opiniones...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    
 
 
     <!-- ============================================================
